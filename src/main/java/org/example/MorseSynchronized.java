@@ -71,9 +71,9 @@ class Productor implements Runnable {
     public void run() {
 
         for (int l_Contador = 0; l_Contador < MorseSynchronized.TEXTO_PALABRAS.length; l_Contador++) {
-
-           a_Buzon.esperar();
-
+            if (l_Contador>0) {
+                a_Buzon.esperar();
+            }
                 a_Buzon.setA_Palabra(MorseSynchronized.TEXTO_PALABRAS[l_Contador]);
                 a_Buzon.notificar();
                 ;
@@ -104,9 +104,9 @@ class Consumidor implements Runnable {
     public void run() {
         for (l_ContadorLetras = 0; l_ContadorLetras < MorseSynchronized.TEXTO_PALABRAS.length; l_ContadorLetras++) {
 
-        if (l_ContadorLetras>0) {
+
             a_Buzon.esperar();
-        }
+
                 l_PalabraATraducir = a_Buzon.getA_Palabra();
                 l_PalabraTraducida = traducirPalabraAMorse(l_PalabraATraducir);
 
@@ -153,7 +153,7 @@ class Buzon {
 
     // Variables de clase
     private String a_Palabra = null;
-    private boolean l_isTurnoProductor = true;
+
 
     // Getters y setters
 
