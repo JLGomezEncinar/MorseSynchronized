@@ -71,15 +71,18 @@ class Productor implements Runnable {
     public void run() {
 
         for (int l_Contador = 0; l_Contador < MorseSynchronized.TEXTO_PALABRAS.length; l_Contador++) {
-            if (l_Contador>0) {
-                a_Buzon.esperar();
+
+            while (!a_Buzon.getTurnProductor()) {
+                if (l_Contador > 0) {
+                    a_Buzon.esperar();
+                }
             }
+            if (a_Buzon.getTurnProductor()) {
                 a_Buzon.setA_Palabra(MorseSynchronized.TEXTO_PALABRAS[l_Contador]);
+
                 a_Buzon.notificar();
                 ;
-
-
-
+            }
 
 
         }
@@ -104,9 +107,11 @@ class Consumidor implements Runnable {
     public void run() {
         for (l_ContadorLetras = 0; l_ContadorLetras < MorseSynchronized.TEXTO_PALABRAS.length; l_ContadorLetras++) {
 
+            while (a_Buzon.getTurnProductor()) {
+                a_Buzon.esperar();
+            }
 
-            a_Buzon.esperar();
-
+            if (!a_Buzon.getTurnProductor()) {
                 l_PalabraATraducir = a_Buzon.getA_Palabra();
                 l_PalabraTraducida = traducirPalabraAMorse(l_PalabraATraducir);
 
@@ -114,7 +119,8 @@ class Consumidor implements Runnable {
                 procesarSalida(l_PalabraATraducir, l_PalabraTraducida);
 
 
-           a_Buzon.notificar();
+                a_Buzon.notificar();
+            }
         }
     } // run
 
@@ -153,10 +159,17 @@ class Buzon {
 
     // Variables de clase
     private String a_Palabra = null;
+    private Boolean isTurnProductor = true;
 
+    public Boolean getTurnProductor() {
+        return isTurnProductor;
+    }
 
-    // Getters y setters
+    public void setTurnProductor(Boolean turnProductor) {
+        isTurnProductor = turnProductor;
+    }
 
+// Getters y setters
 
 
     public String getA_Palabra() {
@@ -166,7 +179,9 @@ class Buzon {
     public void setA_Palabra(String a_Palabra) {
         this.a_Palabra = a_Palabra;
     }
-    public synchronized void esperar(){
+
+
+    public synchronized void esperar() {
         try {
             wait();
 
@@ -174,7 +189,9 @@ class Buzon {
             throw new RuntimeException(e);
         }
     }
+
     public synchronized void notificar() {
+        isTurnProductor = !isTurnProductor;
         notifyAll();
     }
 
