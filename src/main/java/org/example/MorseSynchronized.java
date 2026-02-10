@@ -5,6 +5,7 @@ import org.example.MorseAudio;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 /****************************************************************************************************************************************
@@ -15,7 +16,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  *   @since 27JAN26                                                                                                                 *
  ****************************************************************************************************************************************
  *   COMENTARIOS:                                                                                                                       *
- *        - Clase con dos semáforos que convierte un texto a morse.                                                       *
+ *        - Clase con dos semáforos que convierte un texto a morse (métodos synchronized en el buzón).                                                       *
  ****************************************************************************************************************************************/
 public class MorseSynchronized {
     // Constantes de clase
@@ -38,6 +39,8 @@ public class MorseSynchronized {
     public static final String ABECEDARIO = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ" +
             "0123456789" +
             ".,:¿?'-/()\"";
+    public static final int TIEMPO_ESPERA = 500;
+    public static final boolean REPRODUCIR_AUDIO = true;
 
 
     public static void main(String[] args) {
@@ -127,8 +130,19 @@ class Consumidor implements Runnable {
     // Función que lee la palabra traducida y emite los pitidos.
     private void procesarSalida(String p_PalabraATraducir, String p_PalabraTraducida) {
         System.out.println(p_PalabraATraducir + " -> " + p_PalabraTraducida);
-        l_Reproductor.reproducirAudioMorse(p_PalabraTraducida);
-        l_Reproductor.silencio("PALABRA");
+        if (MorseSynchronized.REPRODUCIR_AUDIO) {
+            l_Reproductor.reproducirAudioMorse(p_PalabraTraducida);
+            l_Reproductor.silencio("PALABRA");
+        } else {
+            try   {
+                TimeUnit.SECONDS.sleep(MorseSynchronized.TIEMPO_ESPERA);
+            }
+            catch (InterruptedException p_Excepcion)
+            {
+
+                System.out.println("ERROR: No se pudo hacer sleep()");
+            }
+        }
     } // procesarSalida
 
     // Función que recibe la palabra a traducir y la traduce a morse
