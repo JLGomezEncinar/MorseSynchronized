@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  *   @since 27JAN26                                                                                                                 *
  ****************************************************************************************************************************************
  *   COMENTARIOS:                                                                                                                       *
- *        - Clase con dos semáforos que convierte un texto a morse (métodos synchronized en el buzón).                                                       *
+ *        - Clase con monitores que convierte un texto a morse (métodos synchronized wait y notify en el buzón).                                                       *
  ****************************************************************************************************************************************/
 public class MorseSynchronized {
     // Constantes de clase
@@ -39,8 +39,8 @@ public class MorseSynchronized {
     public static final String ABECEDARIO = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ" +
             "0123456789" +
             ".,:¿?'-/()\"";
-    public static final int TIEMPO_ESPERA = 500;
-    public static final boolean REPRODUCIR_AUDIO = true;
+    public static final int TIEMPO_ESPERA = 1000; //Espera si no se reproduce audio
+    public static final boolean REPRODUCIR_AUDIO = false; // Determina si suena el audio o no
 
 
     public static void main(String[] args) {
@@ -82,10 +82,11 @@ class Productor implements Runnable {
             }
             if (a_Buzon.getTurnProductor()) {
                 a_Buzon.setA_Palabra(MorseSynchronized.TEXTO_PALABRAS[l_Contador]);
-
-                a_Buzon.notificar();
-                ;
             }
+                a_Buzon.cambiaTurno();
+                a_Buzon.notificar();
+
+
 
 
         }
@@ -120,10 +121,10 @@ class Consumidor implements Runnable {
 
 
                 procesarSalida(l_PalabraATraducir, l_PalabraTraducida);
-
-
-                a_Buzon.notificar();
             }
+                a_Buzon.cambiaTurno();
+                a_Buzon.notificar();
+
         }
     } // run
 
@@ -134,11 +135,9 @@ class Consumidor implements Runnable {
             l_Reproductor.reproducirAudioMorse(p_PalabraTraducida);
             l_Reproductor.silencio("PALABRA");
         } else {
-            try   {
-                TimeUnit.SECONDS.sleep(MorseSynchronized.TIEMPO_ESPERA);
-            }
-            catch (InterruptedException p_Excepcion)
-            {
+            try {
+                TimeUnit.MILLISECONDS.sleep(MorseSynchronized.TIEMPO_ESPERA);
+            } catch (InterruptedException p_Excepcion) {
 
                 System.out.println("ERROR: No se pudo hacer sleep()");
             }
@@ -173,24 +172,27 @@ class Buzon {
 
     // Variables de clase
     private String a_Palabra = null;
-    private Boolean isTurnProductor = true;
+    private Boolean a_isTurnoProductor = true;
 
-    public Boolean getTurnProductor() {
-        return isTurnProductor;
+    // Getters y setters
+    public synchronized Boolean getTurnProductor() {
+        return a_isTurnoProductor;
     }
 
     public void setTurnProductor(Boolean turnProductor) {
-        isTurnProductor = turnProductor;
+        a_isTurnoProductor = turnProductor;
     }
 
-// Getters y setters
 
+    public synchronized void cambiaTurno() {
+        a_isTurnoProductor = !a_isTurnoProductor;
+    }
 
-    public String getA_Palabra() {
+    public synchronized String getA_Palabra() {
         return a_Palabra;
     }
 
-    public void setA_Palabra(String a_Palabra) {
+    public synchronized void setA_Palabra(String a_Palabra) {
         this.a_Palabra = a_Palabra;
     }
 
@@ -202,12 +204,12 @@ class Buzon {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-    }
+    } // esperar
 
     public synchronized void notificar() {
-        isTurnProductor = !isTurnProductor;
+
         notifyAll();
-    }
+    } // notificar
 
 
 } // Buzon
